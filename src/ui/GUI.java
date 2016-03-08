@@ -7,10 +7,13 @@ package ui;
 
 import bp.Light;
 import bp.Powerswitch;
+import bp.TemperatureSensor;
+import com.dalsemi.onewire.OneWireException;
 import com.pubnub.api.Callback;
 import com.pubnub.api.Pubnub;
 import com.pubnub.api.PubnubError;
 import com.pubnub.api.PubnubException;
+import java.io.IOException;
 import javax.swing.text.DefaultCaret;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -91,11 +94,11 @@ public class GUI extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     public static Pubnub pubnub = new Pubnub("pub-c-2a63b4b0-ca5b-4f32-8db9-1c9a1d04ec33", "sub-c-deb946f2-840e-11e5-9e96-02ee2ddab7fe", true);
-
+    
     /**
      * @param args the command line arguments
      */
-    public static void main(String args[]) throws InterruptedException {
+    public static void main(String args[]) throws InterruptedException, JSONException, IOException {
         /*START GLOBAL OBJECTS/VARIABLES*/
 
  /* Set the Nimbus look and feel */
@@ -128,7 +131,7 @@ public class GUI extends javax.swing.JFrame {
             }
         });
         Thread.sleep(8000);
-
+        
         try {
             pubnub.subscribe("pruessner_tribe", new Callback() {
 
@@ -186,6 +189,7 @@ public class GUI extends javax.swing.JFrame {
     public static void queryMessage(Object message) throws JSONException {
         Light livingRoomLight = new Light();
         Powerswitch livingRoomFan = new Powerswitch();
+        TemperatureSensor houseTemperature = new TemperatureSensor();
 
         if (message instanceof JSONObject) {
             JSONObject payload = (JSONObject) message;
@@ -211,6 +215,11 @@ public class GUI extends javax.swing.JFrame {
                     } else if (ja.getString("action").equals("0")){
                         livingRoomFan.turnOff();
                     }
+                }
+            } else if (payload.getString("id").equals("9")) {
+                JSONObject ja = (JSONObject) payload.getJSONArray("commands").get(0);
+                if (ja.has("getState")) {
+                    houseTemperature.getTemp();
                 }
             }
         } else {

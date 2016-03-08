@@ -72,7 +72,6 @@ public class Powerswitch {
         child.put("state", state);
         commands.put(child);
         root.put("commands", commands);
-        GUI.printMessage(root.toString());
         GUI.pubnub.publish("pruessner_tribe", root, callback);
     }
 }
