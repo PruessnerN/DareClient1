@@ -23,34 +23,49 @@ import ui.GUI;
  * @author natha
  */
 public class Light {
-    private static Pin pinNumber = RaspiPin.GPIO_03;
-    private static GpioPinDigitalOutput pin;
-    public static String ID = "7";
+
+    private Pin pinNumber = RaspiPin.GPIO_03;
+    private GpioPinDigitalOutput pin;
+    public String ID = "7";
+
+    public Light(String id) {
+        if (pin == null) {
+            if (id == "7") {
+                ID = id;
+                pinNumber = RaspiPin.GPIO_03;
+                GpioController gpio = GpioFactory.getInstance();
+                pin = gpio.provisionDigitalOutputPin(pinNumber, "MyLED", PinState.LOW);
+            } else if (id == "6") {
+                ID = id;
+                pinNumber = RaspiPin.GPIO_04;
+                GpioController gpio = GpioFactory.getInstance();
+                pin = gpio.provisionDigitalOutputPin(pinNumber, "MyLED", PinState.LOW);
+            }
+        }
+    }
 
     public void turnOn() {
-        if(pin == null) {
+        if (pin == null) {
             GpioController gpio = GpioFactory.getInstance();
             pin = gpio.provisionDigitalOutputPin(pinNumber, "MyLED", PinState.LOW);
         }
-        if(pin.getState() == PinState.LOW) {
-            GUI.printMessage("Light On!");
+        if (pin.getState() == PinState.LOW) {
             pin.high();
         }
     }
-    
+
     public void turnOff() {
-        if(pin == null) {
+        if (pin == null) {
             GpioController gpio = GpioFactory.getInstance();
             pin = gpio.provisionDigitalOutputPin(pinNumber, "MyLED", PinState.LOW);
         }
-        if(pin.getState() == PinState.HIGH) {
-            GUI.printMessage("Light Off!");
+        if (pin.getState() == PinState.HIGH) {
             pin.low();
         }
     }
-    
+
     public void getState() throws JSONException {
-        if(pin == null) {
+        if (pin == null) {
             GpioController gpio = GpioFactory.getInstance();
             pin = gpio.provisionDigitalOutputPin(pinNumber, "MyLED", PinState.LOW);
         }
@@ -58,6 +73,7 @@ public class Light {
             public void successCallback(String channel, Object response) {
                 GUI.printMessage(response.toString());
             }
+
             public void errorCallback(String channel, PubnubError error) {
                 GUI.printMessage(error.toString());
             }
@@ -66,13 +82,13 @@ public class Light {
         JSONArray commands = new JSONArray();
         JSONObject child = new JSONObject();
         String state;
-        state = (pin.getState() == PinState.LOW) ? "0": "1";
-        
-        root.put("id",ID);
+        state = (pin.getState() == PinState.LOW) ? "0" : "1";
+
+        root.put("id", ID);
         child.put("state", state);
         commands.put(child);
         root.put("commands", commands);
         GUI.pubnub.publish("pruessner_tribe", root, callback);
     }
-    
+
 }

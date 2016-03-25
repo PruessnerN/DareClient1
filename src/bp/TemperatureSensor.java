@@ -56,7 +56,7 @@ public class TemperatureSensor {
         try {
             state = getCalculatedTemp();
             root.put("id", ID);
-            child.put("state", state);
+            child.put("temperature", state);
             commands.put(child);
             root.put("commands", commands);
             GUI.pubnub.publish("pruessner_tribe", root, callback);
@@ -72,7 +72,6 @@ public class TemperatureSensor {
         File[] files = dir.listFiles(new DirectoryFileFilter());
         if (files != null) {
             for (File file : files) {
-                System.out.print(file.getName() + ": ");
                 // Device data in w1_slave file
                 String filePath = w1DirPath + "/" + file.getName() + "/w1_slave";
                 File f = new File(filePath);

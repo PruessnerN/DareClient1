@@ -8,12 +8,23 @@ package ui;
 import bp.Light;
 import bp.Powerswitch;
 import bp.TemperatureSensor;
-import com.dalsemi.onewire.OneWireException;
+import bp.DoorSensor;
+import com.pi4j.io.gpio.GpioController;
+import com.pi4j.io.gpio.GpioFactory;
+import com.pi4j.io.gpio.GpioPinDigitalInput;
+import com.pi4j.io.gpio.PinPullResistance;
+import com.pi4j.io.gpio.RaspiPin;
+import com.pi4j.io.gpio.event.GpioPinDigitalStateChangeEvent;
+import com.pi4j.io.gpio.event.GpioPinListenerDigital;
 import com.pubnub.api.Callback;
 import com.pubnub.api.Pubnub;
 import com.pubnub.api.PubnubError;
 import com.pubnub.api.PubnubException;
+import db.JDBCSQLServerConnection;
 import java.io.IOException;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.text.DefaultCaret;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -90,12 +101,24 @@ public class GUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        pubnub.unsubscribe("pruessner_tribe");
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
         System.exit(0);
     }//GEN-LAST:event_jButton1ActionPerformed
 
+    /* GLOBAL VARIABLES */
     public static Pubnub pubnub = new Pubnub("pub-c-2a63b4b0-ca5b-4f32-8db9-1c9a1d04ec33", "sub-c-deb946f2-840e-11e5-9e96-02ee2ddab7fe", true);
-    
-    /**
+    public static Light livingRoomLight = new Light("7");
+    public static Powerswitch livingRoomFan = new Powerswitch();
+    public static TemperatureSensor houseTemperature = new TemperatureSensor();
+    public static DoorSensor frontDoor = new DoorSensor();
+    public static Light bathroomLight = new Light("6");
+
+    /** 
      * @param args the command line arguments
      */
     public static void main(String args[]) throws InterruptedException, JSONException, IOException {
@@ -131,7 +154,14 @@ public class GUI extends javax.swing.JFrame {
             }
         });
         Thread.sleep(8000);
+        JDBCSQLServerConnection database = new JDBCSQLServerConnection();
         
+        try {
+            database.logEvent(1, "Turn Off Light", "Command", "Lights in the bathroom turned off");
+        } catch (SQLException ex) {
+            Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        pubnub.setUUID("62173AA3D1518C02CECA5A343E6349A8528752F4");
         try {
             pubnub.subscribe("pruessner_tribe", new Callback() {
 
@@ -140,6 +170,7 @@ public class GUI extends javax.swing.JFrame {
                     printMessage("SUBSCRIBE : DISCONNECT on channel:" + channel
                             + " : " + message.getClass() + " : "
                             + message.toString());
+
                 }
 
                 @Override
@@ -177,7 +208,12 @@ public class GUI extends javax.swing.JFrame {
         } catch (PubnubException e) {
             System.out.println(e.toString());
         }
-
+        //implement this code when finished developing for consistent sensor querying
+        /*while (true) {
+            frontDoor.getState();
+            houseTemperature.getTemp();
+            Thread.sleep(5000);
+        }*/
     }
 
     public static void printMessage(String message) {
@@ -187,21 +223,27 @@ public class GUI extends javax.swing.JFrame {
     }
 
     public static void queryMessage(Object message) throws JSONException {
-        Light livingRoomLight = new Light();
-        Powerswitch livingRoomFan = new Powerswitch();
-        TemperatureSensor houseTemperature = new TemperatureSensor();
-
         if (message instanceof JSONObject) {
             JSONObject payload = (JSONObject) message;
-            printMessage(payload.getString("id"));
-            if (payload.getString("id").equals("7")) {
+            if (payload.getString("id").equals("6")) {
+                JSONObject ja = (JSONObject) payload.getJSONArray("commands").get(0);
+                if (ja.has("getState")) {
+                    bathroomLight.getState();
+                } else if (ja.has("action")) {
+                    if (ja.getString("action").equals("1")) {
+                        bathroomLight.turnOn();
+                    } else if (ja.getString("action").equals("0")) {
+                        bathroomLight.turnOff();
+                    }
+                }
+            } else if (payload.getString("id").equals("7")) {
                 JSONObject ja = (JSONObject) payload.getJSONArray("commands").get(0);
                 if (ja.has("getState")) {
                     livingRoomLight.getState();
-                } else if(ja.has("action")) {
+                } else if (ja.has("action")) {
                     if (ja.getString("action").equals("1")) {
                         livingRoomLight.turnOn();
-                    } else if (ja.getString("action").equals("0")){
+                    } else if (ja.getString("action").equals("0")) {
                         livingRoomLight.turnOff();
                     }
                 }
@@ -209,10 +251,10 @@ public class GUI extends javax.swing.JFrame {
                 JSONObject ja = (JSONObject) payload.getJSONArray("commands").get(0);
                 if (ja.has("getState")) {
                     livingRoomFan.getState();
-                } else if(ja.has("action")) {
+                } else if (ja.has("action")) {
                     if (ja.getString("action").equals("1")) {
                         livingRoomFan.turnOn();
-                    } else if (ja.getString("action").equals("0")){
+                    } else if (ja.getString("action").equals("0")) {
                         livingRoomFan.turnOff();
                     }
                 }
@@ -220,6 +262,11 @@ public class GUI extends javax.swing.JFrame {
                 JSONObject ja = (JSONObject) payload.getJSONArray("commands").get(0);
                 if (ja.has("getState")) {
                     houseTemperature.getTemp();
+                }
+            } else if (payload.getString("id").equals("10")) {
+                JSONObject ja = (JSONObject) payload.getJSONArray("commands").get(0);
+                if (ja.has("getState")) {
+                    frontDoor.getState();
                 }
             }
         } else {
