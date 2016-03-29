@@ -17,6 +17,7 @@ import com.pi4j.io.gpio.event.GpioPinDigitalStateChangeEvent;
 import com.pi4j.io.gpio.event.GpioPinListenerDigital;
 import com.pubnub.api.Callback;
 import com.pubnub.api.PubnubError;
+import db.JDBCSQLServerConnection;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -29,9 +30,10 @@ import ui.GUI;
 public class DoorSensor {
 
     private Pin pinNumber = RaspiPin.GPIO_02;
-    public String ID = "10";
-    GpioController gpio = GpioFactory.getInstance();
-    private GpioPinDigitalInput pin = gpio.provisionDigitalInputPin(pinNumber, "MyLED", PinPullResistance.PULL_UP);
+    public static int ID = 10;
+    public GpioController gpio = GpioFactory.getInstance();
+    public GpioPinDigitalInput pin = gpio.provisionDigitalInputPin(pinNumber, "MyLED", PinPullResistance.PULL_UP);
+    public JDBCSQLServerConnection database = new JDBCSQLServerConnection();
 
     public void getState() throws JSONException {
         if (pin == null) {

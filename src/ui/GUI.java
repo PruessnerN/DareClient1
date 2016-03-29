@@ -9,25 +9,31 @@ import bp.Light;
 import bp.Powerswitch;
 import bp.TemperatureSensor;
 import bp.DoorSensor;
-import com.pi4j.io.gpio.GpioController;
-import com.pi4j.io.gpio.GpioFactory;
-import com.pi4j.io.gpio.GpioPinDigitalInput;
-import com.pi4j.io.gpio.PinPullResistance;
-import com.pi4j.io.gpio.RaspiPin;
+import bp.ManageSchedules;
+import com.pi4j.io.gpio.PinState;
 import com.pi4j.io.gpio.event.GpioPinDigitalStateChangeEvent;
 import com.pi4j.io.gpio.event.GpioPinListenerDigital;
 import com.pubnub.api.Callback;
 import com.pubnub.api.Pubnub;
 import com.pubnub.api.PubnubError;
 import com.pubnub.api.PubnubException;
-import db.JDBCSQLServerConnection;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.text.DefaultCaret;
+import org.apache.log4j.BasicConfigurator;
 import org.json.JSONException;
 import org.json.JSONObject;
+import static org.quartz.JobBuilder.*;
+import org.quartz.JobDetail;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
+import org.quartz.SchedulerFactory;
+import static org.quartz.TriggerBuilder.*;
+import static org.quartz.SimpleScheduleBuilder.*;
+import org.quartz.Trigger;
+import org.quartz.impl.StdSchedulerFactory;
 
 /**
  *
@@ -40,6 +46,13 @@ public class GUI extends javax.swing.JFrame {
      */
     public GUI() {
         initComponents();
+        try {
+            SchedulerFactory sf = new StdSchedulerFactory();
+            scheduler = sf.getScheduler();
+        } catch (SchedulerException ex) {
+            Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        BasicConfigurator.configure();
     }
 
     /**
@@ -107,21 +120,27 @@ public class GUI extends javax.swing.JFrame {
         } catch (InterruptedException ex) {
             Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
         }
+        try {
+            scheduler.shutdown(true);
+        } catch (SchedulerException ex) {
+            Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
         System.exit(0);
     }//GEN-LAST:event_jButton1ActionPerformed
 
     /* GLOBAL VARIABLES */
     public static Pubnub pubnub = new Pubnub("pub-c-2a63b4b0-ca5b-4f32-8db9-1c9a1d04ec33", "sub-c-deb946f2-840e-11e5-9e96-02ee2ddab7fe", true);
-    public static Light livingRoomLight = new Light("7");
+    public static Light livingRoomLight = new Light(7);
     public static Powerswitch livingRoomFan = new Powerswitch();
     public static TemperatureSensor houseTemperature = new TemperatureSensor();
     public static DoorSensor frontDoor = new DoorSensor();
-    public static Light bathroomLight = new Light("6");
-
-    /** 
+    public static Light bathroomLight = new Light(6);
+    public static int ClientID = 1;
+    public static Scheduler scheduler;
+    /**
      * @param args the command line arguments
      */
-    public static void main(String args[]) throws InterruptedException, JSONException, IOException {
+    public static void main(String args[]) throws InterruptedException, JSONException, IOException, SchedulerException {
         /*START GLOBAL OBJECTS/VARIABLES*/
 
  /* Set the Nimbus look and feel */
@@ -154,14 +173,32 @@ public class GUI extends javax.swing.JFrame {
             }
         });
         Thread.sleep(8000);
-        JDBCSQLServerConnection database = new JDBCSQLServerConnection();
-        
+        pubnub.setUUID("62173AA3D1518C02CECA5A343E6349A8528752F4");
+
+        ManageSchedules scheduleManager = new ManageSchedules();
         try {
-            database.logEvent(1, "Turn Off Light", "Command", "Lights in the bathroom turned off");
+            scheduleManager.startSchedules();
         } catch (SQLException ex) {
             Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
         }
-        pubnub.setUUID("62173AA3D1518C02CECA5A343E6349A8528752F4");
+        scheduler.start();
+
+        frontDoor.pin.addListener(new GpioPinListenerDigital() {
+            @Override
+            public void handleGpioPinDigitalStateChangeEvent(GpioPinDigitalStateChangeEvent event) {
+                try {
+                    String action = "";
+                    if (event.getState() == PinState.HIGH) {
+                        action = "Opened";
+                    } else {
+                        action = "Closed";
+                    }
+                    frontDoor.database.logEvent(frontDoor.ID, action, "Door Sensor");
+                } catch (SQLException ex) {
+                    Logger.getLogger(Light.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        });
         try {
             pubnub.subscribe("pruessner_tribe", new Callback() {
 
@@ -221,7 +258,7 @@ public class GUI extends javax.swing.JFrame {
             consolePane.append(message + "\n");
         }
     }
-
+    
     public static void queryMessage(Object message) throws JSONException {
         if (message instanceof JSONObject) {
             JSONObject payload = (JSONObject) message;

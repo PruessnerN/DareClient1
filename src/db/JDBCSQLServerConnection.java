@@ -5,15 +5,17 @@
  */
 package db;
 
+import java.util.List;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
+import db.Schedule;
 /**
  *
  * @author root
@@ -49,16 +51,15 @@ public class JDBCSQLServerConnection {
         }
     }
     
-    public void logEvent(int clientid, String name, String type, String description) throws SQLException {
+    public void logEvent(int thingid, String action, String type) throws SQLException {
         con = DriverManager.getConnection(dbURL, user, pass);
 
         
-        CallableStatement cStmt = con.prepareCall("{call CreateEvent(?, ?, ?, ?)}");
+        CallableStatement cStmt = con.prepareCall("{call CreateEvent(?, ?, ?)}");
         
-        cStmt.setInt("ClientID", clientid);
-        cStmt.setString("Name", name);
+        cStmt.setInt("ThingID", thingid);
+        cStmt.setString("Action", action);
         cStmt.setString("Type", type);
-        cStmt.setString("Description", description);
         
         boolean hadResults = cStmt.execute();
         
@@ -68,4 +69,47 @@ public class JDBCSQLServerConnection {
         }
     }
     
+    public List<Schedule> getSchedules(String clientCode) throws SQLException {
+        ResultSet rs = null;
+        List<db.Schedule> schedules = new ArrayList<db.Schedule>();
+        
+        con = DriverManager.getConnection(dbURL, user, pass);
+        
+        CallableStatement cStmt = con.prepareCall("{call GetSchedulesByDevice(?)}");
+        
+        cStmt.setString("ClientCode", clientCode);
+        
+        rs = cStmt.executeQuery();
+        
+        while(rs.next()) {
+            Schedule schedule = new Schedule(rs.getInt("ScheduleID"), 
+                    rs.getInt("ThingID"), 
+                    rs.getInt("ActionID"), 
+                    rs.getString("Name"), 
+                    rs.getString("CronExpression"), 
+                    rs.getString("Description"));
+            
+            schedules.add(schedule);
+        }
+       
+        
+        return schedules;
+    }
+    
+    public String getAction(int actionId) throws SQLException {
+        String action = null;
+                
+        con = DriverManager.getConnection(dbURL, user, pass);
+        
+        CallableStatement cStmt = con.prepareCall("{ ? = call ufn_GetActionFromID(?)}");
+        
+        cStmt.setInt(2, actionId);
+        cStmt.registerOutParameter(1, java.sql.Types.NVARCHAR);
+        
+        cStmt.execute();
+        
+        action = cStmt.getString(1);
+        
+        return action;
+    }
 }

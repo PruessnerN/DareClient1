@@ -3,11 +3,12 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/home/pione/Desktop/PubNubClient/src/bp/DoorSensor.java</file>
-            <file>file:/home/pione/Desktop/PubNubClient/src/bp/Powerswitch.java</file>
+            <file>file:/home/pione/Desktop/PubNubClient/src/db/Schedule.java</file>
             <file>file:/home/pione/Desktop/PubNubClient/src/ui/GUI.java</file>
             <file>file:/home/pione/Desktop/PubNubClient/src/bp/Light.java</file>
-            <file>file:/home/pione/Desktop/PubNubClient/src/bp/TemperatureSensor.java</file>
+            <file>file:/home/pione/Desktop/PubNubClient/src/bp/ManageSchedules.java</file>
+            <file>file:/home/pione/Desktop/PubNubClient/src/db/JDBCSQLServerConnection.java</file>
+            <file>file:/home/pione/Desktop/PubNubClient/src/bp/DAREJob.java</file>
         </group>
     </open-files>
 </project-private>

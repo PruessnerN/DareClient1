@@ -13,6 +13,10 @@ import com.pi4j.io.gpio.PinState;
 import com.pi4j.io.gpio.RaspiPin;
 import com.pubnub.api.Callback;
 import com.pubnub.api.PubnubError;
+import db.JDBCSQLServerConnection;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -25,7 +29,9 @@ import ui.GUI;
 public class Powerswitch {
     private static Pin pinNumber = RaspiPin.GPIO_00;
     private static GpioPinDigitalOutput pin;
-    public static String ID = "8";
+    public static int ID = 8;
+    private JDBCSQLServerConnection database = new JDBCSQLServerConnection();
+
 
     public void turnOn() {
         if(pin == null) {
@@ -33,8 +39,12 @@ public class Powerswitch {
             pin = gpio.provisionDigitalOutputPin(pinNumber, "MyLED", PinState.LOW);
         }
         if(pin.getState() == PinState.LOW) {
-            GUI.printMessage("Fan On!");
             pin.high();
+            try {
+                database.logEvent(ID, "Turned On", "Powerswitch");
+            } catch (SQLException ex) {
+                Logger.getLogger(Light.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
     
@@ -44,8 +54,12 @@ public class Powerswitch {
             pin = gpio.provisionDigitalOutputPin(pinNumber, "MyLED", PinState.LOW);
         }
         if(pin.getState() == PinState.HIGH) {
-            GUI.printMessage("Fan Off!");
             pin.low();
+            try {
+                database.logEvent(ID, "Turned Off", "Powerswitch");
+            } catch (SQLException ex) {
+                Logger.getLogger(Light.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
     
