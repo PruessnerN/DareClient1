@@ -8,17 +8,13 @@ package bp;
 import com.pi4j.io.gpio.GpioController;
 import com.pi4j.io.gpio.GpioFactory;
 import com.pi4j.io.gpio.GpioPinDigitalInput;
-import com.pi4j.io.gpio.GpioPinDigitalOutput;
 import com.pi4j.io.gpio.Pin;
 import com.pi4j.io.gpio.PinPullResistance;
 import com.pi4j.io.gpio.PinState;
 import com.pi4j.io.gpio.RaspiPin;
-import com.pi4j.io.gpio.event.GpioPinDigitalStateChangeEvent;
-import com.pi4j.io.gpio.event.GpioPinListenerDigital;
 import com.pubnub.api.Callback;
 import com.pubnub.api.PubnubError;
 import db.JDBCSQLServerConnection;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import ui.GUI;
@@ -53,14 +49,12 @@ public class DoorSensor {
         };
 
         JSONObject root = new JSONObject();
-        JSONArray commands = new JSONArray();
-        JSONObject child = new JSONObject();
+        JSONObject commands = new JSONObject();
         String state = (pin.getState() == PinState.LOW) ? "1" : "0";
 
 
-        root.put("id", ID);
-        child.put("doorState", state);
-        commands.put(child);
+        root.put("id",ID);
+        commands.put("state",state);
         root.put("commands", commands);
         GUI.pubnub.publish("pruessner_tribe", root, callback);
     }

@@ -20,7 +20,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import ui.GUI;
@@ -34,6 +33,7 @@ public class TemperatureSensor {
     private static Pin pinNumber = RaspiPin.GPIO_06;
     private static GpioPinDigitalOutput pin;
     public static String ID = "9";
+    
 
     public void getTemp() throws JSONException {
         if (pin == null) {
@@ -49,15 +49,13 @@ public class TemperatureSensor {
                 GUI.printMessage(error.toString());
             }
         };
-        JSONObject root = new JSONObject();
-        JSONArray commands = new JSONArray();
-        JSONObject child = new JSONObject();
-        double state;
         try {
-            state = getCalculatedTemp();
-            root.put("id", ID);
-            child.put("temperature", state);
-            commands.put(child);
+            String state = Double.toString(getCalculatedTemp());
+            JSONObject root = new JSONObject();
+            JSONObject commands = new JSONObject();
+
+            root.put("id",ID);
+            commands.put("temperature",state);
             root.put("commands", commands);
             GUI.pubnub.publish("pruessner_tribe", root, callback);
         } catch (IOException ex) {

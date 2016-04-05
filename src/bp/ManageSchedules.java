@@ -46,4 +46,26 @@ public class ManageSchedules {
         }
         
     }
+    
+    public void refreshSchedules() throws SQLException, SchedulerException {
+        GUI.scheduler.clear();
+        
+        List<Schedule> schedules = db.getSchedules(GUI.pubnub.getUUID());
+
+        for (Schedule schedule : schedules) {
+            JobDetail job = newJob(DAREJob.class)
+                .withIdentity(Integer.toString(schedule.getScheduleID()), schedule.getName())
+                .usingJobData("Action", schedule.getAction())
+                .usingJobData("ThingID", Integer.toString(schedule.getThingID()))
+                .build();
+            
+            Trigger trigger = newTrigger()
+                .withIdentity(Integer.toString(schedule.getScheduleID()), schedule.getName())
+                .startNow()
+                .withSchedule(cronSchedule(schedule.getCronExpression()))
+                .build();
+            System.out.println("Built single job.");
+            GUI.scheduler.scheduleJob(job, trigger);
+        }
+    }
 }

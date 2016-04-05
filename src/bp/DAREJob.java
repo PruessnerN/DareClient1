@@ -5,14 +5,19 @@
  */
 package bp;
 
-import java.util.Date;
+import com.pubnub.api.Callback;
+import com.pubnub.api.PubnubError;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import ui.GUI;
+import static ui.GUI.pubnub;
 
 /**
  *
@@ -23,54 +28,41 @@ public class DAREJob implements Job {
     public void execute(JobExecutionContext context) throws JobExecutionException {
         JobDataMap data = context.getMergedJobDataMap();
         String id = data.getString("ThingID");
+        Callback callback = new Callback() {
+            public void successCallback(String channel, Object response) {
+                GUI.printMessage(response.toString());
+            }
 
-        switch (id) {
-            case "5":
-                if("Open".equals(data.getString("Action"))) {
-                    
-                } else {
-                    
-                }
-                break;
-            case "6":
-                if("Turn On".equals(data.getString("Action"))) {
-                    GUI.bathroomLight.turnOn();
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException ex) {
-                        Logger.getLogger(DAREJob.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                    GUI.bathroomLight.turnOff();
-                } else {
-                    GUI.bathroomLight.turnOff();
-                }
-                break;
-            case "7":
-                if("Turn On".equals(data.getString("Action"))) {
-                    GUI.livingRoomLight.turnOn();
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException ex) {
-                        Logger.getLogger(DAREJob.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                    GUI.livingRoomLight.turnOff();
-                } else {
-                    GUI.livingRoomLight.turnOff();
-                }
-                break;
-            case "8":
-                if("Turn On".equals(data.getString("Action"))) {
-                    GUI.livingRoomFan.turnOn();
-                } else {
-                    GUI.livingRoomFan.turnOff();
-                }
-                break;
-            case "9":
-                
-                break;
-            case "10":
-                
-                break;
+            public void errorCallback(String channel, PubnubError error) {
+                GUI.printMessage(error.toString());
+            }
+        };
+        
+        JSONObject root = new JSONObject();
+        JSONObject commands = new JSONObject();
+        
+
+        if("Turn On".equals(data.getString("Action"))) {
+            try {
+                root.put("id",id);
+                commands.put("action","1");
+                commands.put("state","1");
+                root.put("commands", commands);
+                GUI.printMessage(root.toString());
+                pubnub.publish("pruessner_tribe", root, callback);
+            } catch (JSONException ex) {
+                Logger.getLogger(DAREJob.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } else if("Turn Off".equals(data.getString("Action"))) {
+            try {
+                root.put("id",id);
+                commands.put("action","0");
+                commands.put("state","0");
+                root.put("commands", commands);
+                pubnub.publish("pruessner_tribe", root, callback);
+            } catch (JSONException ex) {
+                Logger.getLogger(DAREJob.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
 }

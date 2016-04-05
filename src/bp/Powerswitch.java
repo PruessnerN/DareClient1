@@ -77,14 +77,12 @@ public class Powerswitch {
             }
         };
         JSONObject root = new JSONObject();
-        JSONArray commands = new JSONArray();
-        JSONObject child = new JSONObject();
-        String state;
-        state = (pin.getState() == PinState.LOW) ? "0": "1";
-        
+        JSONObject commands = new JSONObject();
+        String state = (pin.getState() == PinState.HIGH) ? "1" : "0";
+
+
         root.put("id",ID);
-        child.put("state", state);
-        commands.put(child);
+        commands.put("state",state);
         root.put("commands", commands);
         GUI.pubnub.publish("pruessner_tribe", root, callback);
     }

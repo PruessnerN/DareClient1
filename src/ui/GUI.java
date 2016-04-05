@@ -137,6 +137,7 @@ public class GUI extends javax.swing.JFrame {
     public static Light bathroomLight = new Light(6);
     public static int ClientID = 1;
     public static Scheduler scheduler;
+    public static ManageSchedules scheduleManager;
     /**
      * @param args the command line arguments
      */
@@ -175,7 +176,7 @@ public class GUI extends javax.swing.JFrame {
         Thread.sleep(8000);
         pubnub.setUUID("62173AA3D1518C02CECA5A343E6349A8528752F4");
 
-        ManageSchedules scheduleManager = new ManageSchedules();
+        scheduleManager = new ManageSchedules();
         try {
             scheduleManager.startSchedules();
         } catch (SQLException ex) {
@@ -263,7 +264,7 @@ public class GUI extends javax.swing.JFrame {
         if (message instanceof JSONObject) {
             JSONObject payload = (JSONObject) message;
             if (payload.getString("id").equals("6")) {
-                JSONObject ja = (JSONObject) payload.getJSONArray("commands").get(0);
+                JSONObject ja = (JSONObject) payload.getJSONObject("commands");
                 if (ja.has("getState")) {
                     bathroomLight.getState();
                 } else if (ja.has("action")) {
@@ -274,7 +275,7 @@ public class GUI extends javax.swing.JFrame {
                     }
                 }
             } else if (payload.getString("id").equals("7")) {
-                JSONObject ja = (JSONObject) payload.getJSONArray("commands").get(0);
+                JSONObject ja = (JSONObject) payload.getJSONObject("commands");
                 if (ja.has("getState")) {
                     livingRoomLight.getState();
                 } else if (ja.has("action")) {
@@ -285,7 +286,7 @@ public class GUI extends javax.swing.JFrame {
                     }
                 }
             } else if (payload.getString("id").equals("8")) {
-                JSONObject ja = (JSONObject) payload.getJSONArray("commands").get(0);
+                JSONObject ja = (JSONObject) payload.getJSONObject("commands");
                 if (ja.has("getState")) {
                     livingRoomFan.getState();
                 } else if (ja.has("action")) {
@@ -296,14 +297,27 @@ public class GUI extends javax.swing.JFrame {
                     }
                 }
             } else if (payload.getString("id").equals("9")) {
-                JSONObject ja = (JSONObject) payload.getJSONArray("commands").get(0);
+                JSONObject ja = (JSONObject) payload.getJSONObject("commands");
                 if (ja.has("getState")) {
                     houseTemperature.getTemp();
                 }
             } else if (payload.getString("id").equals("10")) {
-                JSONObject ja = (JSONObject) payload.getJSONArray("commands").get(0);
+                JSONObject ja = (JSONObject) payload.getJSONObject("commands");
                 if (ja.has("getState")) {
                     frontDoor.getState();
+                }
+            } else if (payload.getString("id").equals("allClients")) {
+                JSONObject ja = (JSONObject) payload.getJSONObject("commands");
+                if (ja.has("refreshClientSchedules")) {
+                    if(ja.getString("refreshClientSchedules").equals("1")) {
+                        try {
+                            scheduleManager.refreshSchedules();
+                        } catch (SQLException ex) {
+                            Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (SchedulerException ex) {
+                            Logger.getLogger(GUI.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
                 }
             }
         } else {
